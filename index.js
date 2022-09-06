@@ -1,54 +1,86 @@
-import express from "express"
-import mongoose from "mongoose"
-import MyModel from "./model.js"
+import express from "express";
+import mongoose from "mongoose";
 
+import schema from "./model.js";
+
+const app = express();
+app.use(express.json());
 const CONNECTION_STRING =
-  "mongodb://127.0.0.1:27017/blog?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.5.4"
-const app = express()
-app.use(express.json())
+  "mongodb://127.0.0.1:27017/test?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.5.4";
 
-app.use("/createuser", async (req, res) => {
-  try {
-    let data = await MyModel.updateMany({}, { address: "chennai" })
+app.use("/createuser", async (request, response) => {
+  let data = await schema.create({
+    cid: 1,
+    cname: "vijayakumar",
+    email: "vijayakumar@gmail.com",
+    dob: "1995-05-05",
+    age: 25,
+    salary: 35000,
+    did: 1,
+    designation: "web developer",
+    pincode: 641602,
+    pancard: "AOOPV1204E",
+    mobileNumber: 9629096390,
+    status: 0,
+    authKey: "abc123",
+  });
+  response.status(200).json(data);
+});
 
-    data.matchedCount
-    data.modifiedCount
-    //MyModel.updateMany({}, { $set: { address: 'coimbatore' } });
-    res.status(200).json(data)
-  } catch (error) {
-    res.status(400).json(error.message)
-  }
+app.use("/allrecords", async (request, response) => {
+  let data = await schema.find();
+  response.status(200).json(data);
+});
+
+app.use("/findselected", async (request, response) => {
+    let data = await schema.find({name:request.body.name});
+    response.status(200).json(data);
+  });
+  
+
+app.use("/updatesingleuser", async (request, response) => {
+    //console.log(request.body);
+  let data = await schema.updateOne(
+    { mobileNumber: request.body.number },
+    {
+      $set: {
+        cname: request.body.name,
+      },
+    }
+  );
+  
+  response.status(200).json(data);
+});
+
+app.use("/updatemultiuser", async (request, response) => {
+    //console.log(request.body);
+  let data = await schema.updateMany(
+    {},
+    {
+      $set: {
+        salary: request.body.salary,
+      },
+    }
+  );
+  
+  response.status(200).json(data);
+});
+
+app.use("/deleteoneuser", async (request,response) =>{
+    let deleteoneuser = await schema.deleteOne({cname:request.body.name})
+    let activeuser = await schema.find()
+    console.log(activeuser);
+
+    response.status(200).json(deleteoneuser);
 })
 
-mongoose.connect(CONNECTION_STRING).then(() => {
-  app.listen(1982, "localhost", () => console.log("express is working.....!"))
-})
-
-// let data = await MyModel.create({
-//   name: "Rajesh",
-//   gender: "male",
-//   age: 21,
-// })
-// data.name = "Rajesh Don"
-// await data.save()
-
-//let data = await MyModel.find({ name: "vijay" })
-
-// MyModel.exists({name: "vijay"})
-
-//let data = await MyModel.deleteOne({ name: "vijay" })
-
-//let data = await MyModel.where("name").equals("vijay")
-
-//where("age").gt(12).lt(25).where("name").equals("vijay").limit(2).select("age")
-
-//populate like joins
-
-// let data = await MyModel.updateMany(
-//   {},
-//   { $set: { isMarried: false } },
-//   (err, datas) => {
-//     if (err) throw err
-//     console.log("Update user:", datas)
-//   }
-// )
+mongoose
+  .connect(CONNECTION_STRING)
+  .then(() => {
+    app.listen(3030, "localhost", () => {
+      console.log("success ");
+    });
+  })
+  .catch((error) => {
+    console.log(error);
+  });
