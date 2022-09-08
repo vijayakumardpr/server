@@ -1,22 +1,24 @@
 import mongoose from "mongoose"
 
 const schemaName = mongoose.Schema({
-    cid:Number,
-    cname: String,
-    email:String,
-    dob:String,
-    age:Number,
-    salary:Number,
-    did:Number,
-    designation:String,
-    pincode:Number,
-    pancard:String,
-    mobileNumber:Number,
-    status:Number,
-    authKey:String
+  cid: Number,
+  cname: String,
+  email: String,
+  dob: String,
+  age: Number,
+  salary: Number,
+  did: Number,
+  designation: String,
+  pincode: Number,
+  pancard: String,
+  mobileNumber: Number,
+  status: Number,
+  authKey: String,
+  password: String,
+  newPassword: String,
 })
 
-export default mongoose.model('customer',schemaName)
+export default mongoose.model("customer", schemaName)
 
 // email:{
 //   type: String,
