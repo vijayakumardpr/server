@@ -15,7 +15,6 @@ const schemaName = mongoose.Schema({
   status: Number,
   authKey: String,
   password: String,
-  newPassword: String,
 })
 
 export default mongoose.model("customer", schemaName)

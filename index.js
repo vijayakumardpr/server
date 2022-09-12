@@ -9,157 +9,121 @@ app.use(express.json())
 
 const CONNECTION_STRING = "mongodb://127.0.0.1:27017/blog"
 
+function randomAuthKey() {
+  let authkey = ""
+  for (let i = 0; i < 7; i++) {
+    authkey += Math.floor(Math.random() * 9)
+  }
+  return authkey
+}
+
 app.use("/createuser", async (request, response) => {
-  let data = await schema.create({
-    cid: 1,
-    cname: "vijayakumar",
-    email: "vijayakumar@gmail.com",
-    dob: "1995-05-05",
-    age: 25,
-    salary: 35000,
-    did: 1,
-    designation: "web developer",
-    pincode: 641602,
-    pancard: "AOOPV1204E",
-    mobileNumber: 9629096390,
-    status: 0,
-    authKey: "abc123",
-    password: "qwerty123",
-    newPassword: "",
-  })
-  response.status(200).json(data)
+  try {
+    let data = await schema.create({
+      cid: 1,
+      cname: "vijayakumar",
+      email: "vijayakumar@gmail.com",
+      dob: "1995-05-05",
+      age: 25,
+      salary: 35000,
+      did: 1,
+      designation: "web developer",
+      pincode: 641602,
+      pancard: "AOOPV1204E",
+      mobileNumber: 9629096390,
+      status: 0,
+      authKey: "",
+      password: "qwerty123",
+    })
+    response.status(200).json(data)
+  } catch {
+    response.status(400).json("something problem!")
+  }
 })
 
-app.use("/allrecords", async (request, response) => {
+app.use("/showrecords", async (request, response) => {
   try {
     let data = await schema.find()
     response.status(200).json(data)
   } catch {
-    response.status(500).json("error")
+    response.status(400).json("something problem in all records!")
   }
 })
 
-app.use("/findbyselected", async (request, response) => {
-  let data = await schema.find({ name: request.body.name })
-  response.status(200).json(data)
+app.use("/selectedrecords", async (request, response) => {
+  const { name } = request.body
+  try {
+    let data = await schema.find({ cname: name })
+    response.status(200).json(data)
+  } catch {
+    response.status(200).json("something problem in selected row!")
+  }
 })
 
-app.use("/updatesingleuser", async (request, response) => {
-  //console.log(request.body);
-  let data = await schema.updateOne(
-    { mobileNumber: request.body.number },
-    {
-      $set: {
-        cname: request.body.name,
-      },
-    }
-  )
+app.use("/findandmodify", async (request, response) => {
+  const { id } = request.body
+  try {
+    //const { email, password } = request.body
+    let data = await schema.findByIdAndUpdate(
+      { _id: id },
+      { $set: { age: 19, designation: "MEAN Stack" } }
+    )
 
-  response.status(200).json(data)
-})
-
-app.use("/updatemultiuser", async (request, response) => {
-  //console.log(request.body);
-  let data = await schema.updateMany(
-    {},
-    {
-      $set: {
-        salary: request.body.salary,
-      },
-    }
-  )
-
-  response.status(200).json(data)
-})
-
-app.use("/deleteoneuser", async (request, response) => {
-  let deleteoneuser = await schema.deleteOne({ cname: request.body.name })
-  let activeuser = await schema.find()
-  console.log(activeuser)
-
-  response.status(200).json(deleteoneuser)
-})
-
-app.use("/deletemanyuser", async (request, response) => {
-  let deleteManyUser = await schema.deleteMany({ age: request.body.age })
-  let activeuser = await schema.find()
-  console.log(activeuser)
-
-  response.status(200).json(deleteManyUser)
+    response.status(200).json(data)
+  } catch {
+    response.status(400).json("something problem in selected row!")
+  }
 })
 
 app.use("/login", async (request, response) => {
-  //console.log(request.body)
-  let validUser = await schema.find({
-    $and: [{ cname: request.body.name }, { password: request.body.password }],
-  })
+  const { name, password } = request.body
+  try {
+    let loginUser = await schema.find({
+      $and: [{ cname: name }, { password: password }],
+    })
 
-  console.log(validUser[0])
-  let statusUpdate = await schema.updateOne(
-    {
-      cname: validUser[0].cname,
-    },
-    {
-      $set: {
-        status: 1,
-      },
-    },
-    {
-      upsert: true,
+    if (loginUser.length > 0) {
+      let updateUser = await schema.updateOne(
+        { cname: loginUser[0].cname },
+        {
+          $set: { authKey: randomAuthKey() },
+        }
+      )
+      console.log(updateUser)
     }
-  )
-
-  if (validUser.length > 0) {
-    response.status(200).json("successfully")
-  } else {
-    response.status(401).json("login failed")
+    response.status(200).json(loginUser)
+  } catch {
+    response.status(400).json("something problems in login")
   }
 })
 
-app.use("/logout", async (request, response) => {
-  let userLogout = await schema.findOne({ status: 1 })
-
-  console.log(userLogout)
-  if (userLogout !== null) {
-    let statusUpdate = await schema.updateOne(
+app.use("/updateuser", async (request, response) => {
+  const { key } = request.body
+  try {
+    let updatedUser = await schema.updateOne(
+      { authKey: key },
       {
-        cname: userLogout[0].cname,
-      },
-      {
-        $set: {
-          status: 0,
-        },
-      },
-      {
-        upsert: true,
+        $inc: { age: 1 },
       }
     )
-    response.status(200).json(statusUpdate)
+    response.status(200).json(updatedUser)
+  } catch {
+    response.status(400).json("something problem in update user")
   }
-  response.status(200).json("Already logged out")
 })
 
-app.use("/forgotpassword", async (request, response) => {
-  let getByEmailId = await schema.find({ email: request.body.email })
-  console.log(getByEmailId)
-
-  if (getByEmailId.length > 0) {
-    let setNewPassword = await schema.updateOne(
-      { email: getByEmailId[1].email },
-      {
-        $set: {
-          newPassword: request.body.newpassword,
-        },
-      },
-      {
-        upsert: true,
-      }
-    )
-    //console.log(setNewPassword)
-    response.status(200).json(getByEmailId[1])
+app.use("/deleteoneuser", async (request, response) => {
+  const { key } = request.body
+  try {
+    let deleteoneuser = await schema.deleteOne({ authKey: key })
+    let activeuser = await schema.find()
+    response.status(200).json("deletedUser", deleteoneuser)
+    response.status(200).json("ActiveUser", activeuser)
+  } catch {
+    response.status(400).json("something problems in delete rows")
   }
-  response.status(200).json("email not found")
 })
+
 mongoose
   .connect(CONNECTION_STRING)
   .then(() => {
